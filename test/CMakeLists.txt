@@ -19,6 +19,12 @@ target_compile_features(test-format PRIVATE c_std_99)
 
 add_test(NAME test-format COMMAND test-format)
 
+add_executable(test-rand source/test-rand.c)
+target_link_libraries(test-rand PRIVATE iobuf::iobuf)
+target_compile_features(test-rand PRIVATE c_std_99)
+
+add_test(NAME test-rand COMMAND test-rand)
+
 # ---- End-of-file commands ----
 
 add_folders(Test)
