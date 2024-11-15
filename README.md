@@ -1,7 +1,34 @@
-# iobuf
+# IOBuf
 
-This is the iobuf project.
+More like IOBugged
 
-# Building and installing
+## Clangd setup
 
-See the [BUILDING](BUILDING.md) document.
+In order to have proper intellisense, you need to generate the `compile_commands.json` config for [clangd](http://clang.llvm.org/docs/JSONCompilationDatabase.html):
+
+```sh
+make clean; bear -- make
+```
+
+## Building
+
+Pretty straightforward:
+
+```sh
+make all
+```
+
+## Running tests
+
+Will probably fail
+
+```sh
+make test
+```
+
+
+<br>
+<br>
+<br>
+
+© 2024 JaajSoft
