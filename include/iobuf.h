@@ -11,7 +11,7 @@ typedef struct _ES_FICHIER {
 
   char buf[MAX_SIZE]; // buffer
   int p; // current byte;
-  int buf_size;
+  size_t buf_size;
   
 } FICHIER;
 
