@@ -11,19 +11,19 @@
     {
       devShells.${system}.default = with pkgs; mkShell rec {
         packages = [
-          gcc
           gdb
           lldb
           bear
-          clang
           gnumake
           clang-tools
           nixpkgs-fmt
+        ];
+        nativeBuildInputs = [
           pkg-config
+          gcc
         ];
         buildInputs = [
-          gcc
-          clang
+          glibc
         ];
         LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;
       };
