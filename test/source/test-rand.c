@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "iobuf/iobuf.h"
+#include "iobuf.h"
 
 #define MEMORY_SIZE 1280000 /* 1,3 Mo */
 

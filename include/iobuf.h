@@ -1,8 +1,19 @@
 #ifndef _IOBUF_H
 #define _IOBUF_H
 
+#include <stdlib.h>
+#define MAX_SIZE 128
+
 struct _ES_FICHIER;
-typedef struct _ES_FICHIER FICHIER;
+typedef struct _ES_FICHIER {
+  int fd; // file descriptor
+  char mode; // L/E
+
+  char buf[MAX_SIZE]; // buffer
+  int p; // current byte;
+  size_t buf_size;
+  
+} FICHIER;
 
 extern FICHIER* stdout;
 extern FICHIER* stderr;
