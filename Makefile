@@ -31,7 +31,6 @@ LIB		:= lib
 TEST	:= test
 
 ifeq ($(OS),Windows_NT)
-MAIN	:= main.exe
 SOURCEDIRS	:= $(SRC)
 INCLUDEDIRS	:= $(INCLUDE)
 LIBDIRS		:= $(LIB)
@@ -40,7 +39,6 @@ FIXPATH = $(subst /,\,$1)
 RM			:= del /q /f
 MD	:= mkdir
 else
-MAIN	:= main
 SOURCEDIRS	:= $(shell find $(SRC) -type d)
 INCLUDEDIRS	:= $(shell find $(INCLUDE) -type d)
 LIBDIRS		:= $(shell find $(LIB) -type d)
@@ -80,16 +78,11 @@ TEST_DEPS		:= $(TEST_OBJECTS:.o=.d)
 # deleting dependencies appended to the file from 'make depend'
 #
 
-OUTPUTMAIN	:= $(call FIXPATH,$(OUTPUT)/$(MAIN))
-
-all: $(OUTPUT) $(MAIN)
+all: $(OUTPUT)
 	@echo Executing 'all' complete!
 
 $(OUTPUT):
 	$(MD) $(OUTPUT)
-
-$(MAIN): $(OBJECTS)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(OUTPUTMAIN) $(OBJECTS) $(LFLAGS) $(LIBS)
 
 # include all .d files
 -include $(DEPS)
@@ -104,25 +97,17 @@ $(MAIN): $(OBJECTS)
 
 .PHONY: clean
 clean:
-	$(RM) $(OUTPUTMAIN)
 	$(RM) $(call FIXPATH,$(OBJECTS))
 	$(RM) $(call FIXPATH,$(DEPS))
 	$(RM) $(call FIXPATH,$(TEST_OBJECTS))
 	$(RM) $(call FIXPATH,$(TEST_DEPS))
 	@echo Cleanup complete!
 
-run: all
-	./$(OUTPUTMAIN)
-	@echo Executing 'run: all' complete!
-
 # Test target
-test: $(TEST_OBJECTS)
-	$(foreach test,$(TEST_SOURCES),$(CC) $(CFLAGS) $(INCLUDES) -o $(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=))) $(test:.c=.o) $(LFLAGS) $(LIBS); ./$(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=)));)
+test: $(TEST_OBJECTS) $(OBJECTS)
+	$(foreach test,$(TEST_SOURCES),$(CC) $(CFLAGS) $(INCLUDES) -o $(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=))) $(test:.c=.o) $(OBJECTS) $(LFLAGS) $(LIBS); ./$(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=)));)
 	@echo Executing 'test' complete!
 
 # include all test .d files
 -include $(TEST_DEPS)
 
-# this is a suffix replacement rule for building test .o's and .d's from .c's
-.c.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -c -MMD $<  -o $@
