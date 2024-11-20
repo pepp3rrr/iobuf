@@ -128,8 +128,31 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 }
 int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 {
-  write(f->fd, p, taille * nbelem);
-  return 0;
+  if (f->wbuf == NULL) {
+    fecriref(stderr, "Called `ecrire` on a file opened in read-only mode");
+    return 0;
+  }
+
+  unsigned int written_elems = 0;
+  while (written_elems != nbelem) {
+    unsigned int nbytes =  // Number of bytes to write
+        (nbelem - written_elems) * taille;
+    int available_bytes = MIN(nbytes, MAX_SIZE - f->wbuf_p);
+    int available_elems =
+        available_bytes / taille;  // Integer division, remainder is discarded
+    if (available_elems <= 0) {
+      // Flush the buffer
+      vider(f);
+      continue;
+    } else {
+      mempcpy(f->wbuf + f->wbuf_p, p, available_elems * taille);
+      p += available_elems * taille;
+      written_elems += available_elems;
+      f->wbuf_p += available_elems * taille;
+    }
+  }
+
+  return written_elems;
 }
 
 int vider(FICHIER* f)
