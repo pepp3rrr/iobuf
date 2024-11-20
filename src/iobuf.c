@@ -6,26 +6,64 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 FICHIER* ouvrir(const char* nom, char mode)
 {
-  if (mode != 'L' || mode != 'E') {
-    // fprintf(stderr, "Unsupported mode");
+  int file_fd;
+  switch (mode) {
+    case 'L':
+      file_fd = open(nom, O_RDONLY);
+      break;
+    case 'E':
+      file_fd = open(nom, O_WRONLY);
+      break;
+    case 'A':
+      file_fd = open(nom, O_RDWR);
+      break;
+    default:
+      // fecriref(stderr, "Unsupported mode");
+      return NULL;
+  }
+
+  if (file_fd == -1) {
+    // fecriref(stderr, "Error opening file");
     return NULL;
   }
+
   FICHIER* file = malloc(sizeof(FICHIER));
   if (file == NULL) {
-    // fprintf(stderr, "Internal alloc error");
+    // fecriref(stderr, "Internal alloc error");
     return NULL;
   }
-  if ((file->fd = open(nom, mode)) == -1) {
-    // if open fails
-    // fprintf(stderr, "Error opening file");
-    free(file);
-    return NULL;
+
+  char(*rbuf)[MAX_SIZE] = NULL;
+  char(*wbuf)[MAX_SIZE] = NULL;
+  if (mode == 'L' || mode == 'A') {
+    rbuf = malloc(MAX_SIZE);
+    if (rbuf == NULL) {
+      // fecriref(stderr, "Internal alloc error");
+      free(file);
+      return NULL;
+    }
   }
-  file->mode = mode;
-  file->p = 0;
-  file->buf_size = 0;
+  if (mode == 'E' || mode == 'A') {
+    wbuf = malloc(MAX_SIZE);
+    if (wbuf == NULL) {
+      // fecriref(stderr, "Internal alloc error");
+      free(file);
+      free(rbuf);
+      return NULL;
+    }
+  }
+
+  file->fd = file_fd;
+  file->rbuf = rbuf;
+  file->wbuf = wbuf;
+  file->wbuf_p = 0;
+  file->rbuf_p = 0;
+  file->rbuf_s = 0;
 
   return file;
 }
@@ -33,97 +71,83 @@ FICHIER* ouvrir(const char* nom, char mode)
 int fermer(FICHIER* f)
 {
   close(f->fd);
+  free(f->wbuf);
+  free(f->rbuf);
   free(f);
   return 0;
 }
 
 int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 {
-  if (f == NULL) {
-    // fprintf(stderr, "Empty file pointer");
+  if (f->rbuf == NULL) {
+    fecriref(stderr, "Called `lire` on a file opened in write-only mode");
     return 0;
   }
 
-  if (f->mode != 'L') {
-    // fprintf(stderr, "No rights to read this file");
-    return 0;
-  }
-  // reading while possible
-  size_t offset = 0;
-  size_t bytes;
-  int el_read = 0;
-  while (nbelem > 0) {
-    if (f->buf_size == 0) {
-      // filling if buf is full/empty
-      if((f->buf_size = read(f->fd, f->buf, MAX_SIZE)) < 1){
-        // read did not do anything - quitting
-        return el_read;
+  char refill_rbuf = f->rbuf_p == 0 && nbelem && taille;
+  unsigned int read_elems = 0;
+  while (read_elems != nbelem) {
+    /// Initialize the buffer the first time
+    if (refill_rbuf) {
+      ssize_t bytes_read =
+          read(f->fd, f->rbuf + f->rbuf_p, MAX_SIZE - f->rbuf_p);
+      if (bytes_read == -1) {
+        fecriref(stderr, "Error reading from file");
+        return read_elems;
       }
-      f->p = 0;
+      if (bytes_read == 0) {
+        return read_elems;
+      }
+      f->rbuf_s = f->rbuf_p + bytes_read;
+      refill_rbuf = 0;
     }
 
-    // case buffer is not empty, but does not have a "taille" object to read
-    if (f->buf_size < taille) {
-      // copy the leftovers to the left
-      memcpy(f->buf, (f->buf + f->p), (MAX_SIZE - f->p));
-      f->p = 0;
-      f->buf_size += read(f->fd, (void*)(f->buf) + f->p, (MAX_SIZE - f->buf_size));
+    unsigned int nbytes =  // Number of bytes to read
+        (nbelem - read_elems) * taille;
+    int available_bytes = MIN(nbytes, f->rbuf_s - f->rbuf_p);
+    int available_elems =
+        available_bytes / taille;  // Integer division, remainder is discarded
+    if (available_elems <= 0) {
+      unsigned int remaining_bytes = f->rbuf_s - f->rbuf_p;
+      // Copy the remaining bytes to the beginning of the buffer
+      memmove(f->rbuf, f->rbuf + f->rbuf_p, remaining_bytes);
+      f->rbuf_p = 0;
+      f->rbuf_s = remaining_bytes;
+      // Refill the buffer
+      refill_rbuf = 1;
+      continue;
+    } else {
+      mempcpy(p, f->rbuf + f->rbuf_p, available_elems * taille);
+      p += available_elems * taille;
+      read_elems += available_elems;
+      f->rbuf_p += available_elems * taille;
     }
-    if (f->buf_size < taille) {
-      // if still not enough -- quit
-      return el_read;
-    }
-    // else copy current buffer
-
-    bytes = (f->buf_size / taille) * taille; // read only by objects
-    memcpy((p + offset), (void*)(f->buf) + f->p, bytes);
-    // update buffer and offset the given pointer
-    f->buf_size -= bytes;
-    f->p += bytes;
-    offset += bytes;
-    // update return val
-    el_read += (bytes / taille);
-    nbelem -= (bytes / taille);
   }
-  return el_read;
+
+  return read_elems;
 }
 int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 {
-if (f == NULL) {
-    // fprintf(stderr, "Empty file pointer");
-    return 0;
-  }
-
-  if (f->mode != 'E') {
-    // fprintf(stderr, "No rights to write this file");
-    return 0;
-  }
-  
-  size_t offset = 0;
-  size_t bytes;
-  int el_read = 0;
-  // normally, we should be always able to write all objects
-  while (nbelem > 0) {
-    memcpy(f->buf, p, (size_t)((MAX_SIZE/taille)*taille));
-    
-    write(f->fd, f->buf, MAX_SIZE);
-  }
+  write(f->fd, p, taille * nbelem);
+  return 0;
 }
+
 int vider(FICHIER* f)
 {
-  // TODO: implement
   return 0;
 }
 
 int fecriref(FICHIER* f, const char* format, ...)
 {
-  // TODO: implement
+  // Simple implementation for now
+  write(f->fd, format, strlen(format));
   return 0;
 }
 /* directly in stdout */
 int ecriref(const char* format, ...)
 {
-  // TODO: implement
+  // Simple implementation for now
+  write(stdout->fd, format, strlen(format));
   return 0;
 }
 int fliref(FICHIER* f, const char* format, ...)
