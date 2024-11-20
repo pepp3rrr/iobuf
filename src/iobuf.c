@@ -157,7 +157,18 @@ int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 
 int vider(FICHIER* f)
 {
-  return 0;
+  if (f->wbuf == NULL) {
+    fecriref(stderr, "Called `vider` on a file opened in read-only mode");
+    return 0;
+  }
+
+  ssize_t bytes_written = write(f->fd, f->wbuf, f->wbuf_p);
+  if (bytes_written == -1) {
+    fecriref(stderr, "Error writing to file");
+    return 0;
+  }
+  f->wbuf_p = 0;
+  return bytes_written;
 }
 
 int fecriref(FICHIER* f, const char* format, ...)
