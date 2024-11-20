@@ -48,9 +48,9 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f);
 /// @param taille The size of the elements (`sizeof`) to write into the file
 /// @param taille The number of the elements to write into the file
 /// @param f The file to write data to
-/// @return The number of elements that have actually been written to the disk,
-/// call `vider` to ensure elements are written from the cache buffer to the
-/// disk.
+/// @return The number of elements that have been written to the disk or cached
+/// in the buffer. Call `vider` to ensure elements are written from the cache
+/// buffer to the disk.
 int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f);
 
 /// @brief Flushes data from the file cache buffer to the disk.
