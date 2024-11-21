@@ -14,6 +14,8 @@ typedef struct _ES_FICHIER {
   char buf[MAX_SIZE];
   /// The current index in the buffer
   size_t buf_i;
+  /// The current size of the buffer
+  size_t buf_s;
 } FICHIER;
 
 extern FICHIER* stdout;
