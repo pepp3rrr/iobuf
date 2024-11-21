@@ -12,6 +12,10 @@ char MEMORY[MEMORY_SIZE];
 
 void init_mem(void)
 {
+  init_es_standard();
+  ecriref("Initializing memory...\n");
+  vider(stdout);
+
   int i;
   struct timeval tv;
   gettimeofday(&tv, NULL);
