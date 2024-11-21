@@ -50,18 +50,18 @@ FICHIER* ouvrir(const char* nom, char mode)
       file_fd = open(nom, O_RDWR | O_CREAT, 0700);
       break;
     default:
-      fecriref(stderr, "Unsupported mode");
+      fecriref(stderr, "Unsupported mode\n");
       return NULL;
   }
 
   if (file_fd == -1) {
-    fecriref(stderr, "Error opening file");
+    fecriref(stderr, "Error opening file\n");
     return NULL;
   }
 
   FICHIER* file = malloc(sizeof(FICHIER));
   if (file == NULL) {
-    fecriref(stderr, "Internal alloc error");
+    fecriref(stderr, "Internal alloc error\n");
     return NULL;
   }
 
@@ -70,7 +70,7 @@ FICHIER* ouvrir(const char* nom, char mode)
   if (mode == 'L' || mode == 'A') {
     rbuf = malloc(MAX_SIZE);
     if (rbuf == NULL) {
-      fecriref(stderr, "Internal alloc error");
+      fecriref(stderr, "Internal alloc error\n");
       free(file);
       return NULL;
     }
@@ -78,7 +78,7 @@ FICHIER* ouvrir(const char* nom, char mode)
   if (mode == 'E' || mode == 'A') {
     wbuf = malloc(MAX_SIZE);
     if (wbuf == NULL) {
-      fecriref(stderr, "Internal alloc error");
+      fecriref(stderr, "Internal alloc error\n");
       free(file);
       free(rbuf);
       return NULL;
@@ -107,7 +107,7 @@ int fermer(FICHIER* f)
 int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 {
   if (f->rbuf == NULL) {
-    fecriref(stderr, "Called `lire` on a file opened in write-only mode");
+    fecriref(stderr, "Called `lire` on a file opened in write-only mode\n");
     return 0;
   }
 
@@ -115,7 +115,7 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
     // Don't bother using the cache, reaed directly into the buffer
     ssize_t bytes_read = read(f->fd, p, taille * nbelem);
     if (bytes_read == -1) {
-      fecriref(stderr, "Error reading from file");
+      fecriref(stderr, "Error reading from file\n");
       return 0;
     }
     return bytes_read / taille;
@@ -129,7 +129,7 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
       ssize_t bytes_read =
           read(f->fd, f->rbuf + f->rbuf_p, MAX_SIZE - f->rbuf_p);
       if (bytes_read == -1) {
-        fecriref(stderr, "Error reading from file");
+        fecriref(stderr, "Error reading from file\n");
         return read_elems;
       }
       if (bytes_read == 0) {
@@ -167,7 +167,7 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 {
   if (f->wbuf == NULL) {
-    fecriref(stderr, "Called `ecrire` on a file opened in read-only mode");
+    fecriref(stderr, "Called `ecrire` on a file opened in read-only mode\n");
     return 0;
   }
 
@@ -175,7 +175,7 @@ int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
     // Don't bother using the cache, write directly from the buffer
     ssize_t bytes_written = write(f->fd, p, taille * nbelem);
     if (bytes_written == -1) {
-      fecriref(stderr, "Error writing to file");
+      fecriref(stderr, "Error writing to file\n");
       return 0;
     }
     return bytes_written / taille;
@@ -206,13 +206,13 @@ int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 int vider(FICHIER* f)
 {
   if (f->wbuf == NULL) {
-    fecriref(stderr, "Called `vider` on a file opened in read-only mode");
+    fecriref(stderr, "Called `vider` on a file opened in read-only mode\n");
     return 0;
   }
 
   ssize_t bytes_written = write(f->fd, f->wbuf, f->wbuf_p);
   if (bytes_written == -1) {
-    fecriref(stderr, "Error writing to file");
+    fecriref(stderr, "Error writing to file\n");
     return 0;
   }
   f->wbuf_p = 0;
