@@ -23,22 +23,27 @@ void init_mem(void)
     MEMORY[i++] = (char)(rand() % 95 + 0x20); /* printable characters */
 }
 
-void mem_compare(char* ref, char* buff, int nbytes)
+int mem_compare(char* ref, char* buff, int nbytes)
 {
   int i;
+  int error = 0;
   ecriref("Comparing memories...\n");
   for (i = 0; i < nbytes; i++) {
     if (ref[i] != buff[i]) {
       fecriref(stderr, "ERROR %c != %c at index %d\n", ref[i], buff[i], i);
+      error = 1;
     }
   }
   ecriref("Done\n");
   vider(stdout);
+
+  return error;
 }
 
 int main()
 {
   FICHIER* f;
+  int result = 0;
   char* filename = "rand-file.txt";
 
   unsigned int elem_size = MAX_SIZE + 69;
@@ -59,8 +64,10 @@ int main()
     if (f == NULL)
       exit(-1);
     lire(buffer, elem_size, elem_count, f);
-    mem_compare(MEMORY, buffer, elem_count * elem_size);
+    result = mem_compare(MEMORY, buffer, elem_count * elem_size);
     free(buffer);
     fermer(f);
   }
+
+  return result;
 }

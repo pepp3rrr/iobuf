@@ -81,22 +81,27 @@ void mem_read(FICHIER* f, char* buff)
   vider(stdout);
 }
 
-void mem_compare(char* ref, char* buff)
+int mem_compare(char* ref, char* buff)
 {
   int i;
+  int error = 0;
   ecriref("Comparing memories...\n");
   for (i = 0; i < MEMORY_SIZE; i++) {
     if (ref[i] != buff[i]) {
       fecriref(stderr, "ERROR %c != %c at index %d\n", ref[i], buff[i], i);
+      error = 1;
     }
   }
   ecriref("Done\n");
   vider(stdout);
+
+  return error;
 }
 
 int main(int argc, char* argv[])
 {
   FICHIER* f;
+  int result = 0;
   char* filename = "rand-file.txt";
 
   init_mem();
@@ -113,10 +118,10 @@ int main(int argc, char* argv[])
     if (f == NULL)
       exit(-1);
     mem_read(f, buffer);
-    mem_compare(MEMORY, buffer);
+    result = mem_compare(MEMORY, buffer);
     free(buffer);
     fermer(f);
   }
 
-  return 0;
+  return result;
 }
