@@ -1,6 +1,7 @@
 #include "iobuf.h"
 
 #include <fcntl.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -164,9 +165,61 @@ int vider(FICHIER* f)
 
 int fecriref(FICHIER* f, const char* format, ...)
 {
-  // Simple implementation for now
-  ecrire(format, sizeof(char), strlen(format), f);
-  return 0;
+  va_list args;
+  va_start(args, format);
+
+  char buffer[MAX_SIZE];
+  char* buf_ptr = buffer;
+  const char* fmt = format;
+  int written = 0;
+
+  while (*fmt && buf_ptr < buffer + MAX_SIZE - 1) {
+    if (*fmt == '%') {
+      fmt++;
+      if (*fmt == 'd') {  // Integer
+        int value = va_arg(args, int);
+        char int_buf[20];  // Temporary buffer for integer, don't mind buffer
+                           // overflows that's C anyway
+        int len = 0;
+        if (value < 0) {
+          *buf_ptr++ = '-';
+          value = -value;
+          written++;
+        }
+        do {
+          int_buf[len++] = '0' + (value % 10);
+          value /= 10;
+        } while (value > 0);
+
+        for (int i = len - 1; i >= 0; i--) {
+          *buf_ptr++ = int_buf[i];
+          written++;
+        }
+      } else if (*fmt == 's') {  // String
+        const char* str = va_arg(args, const char*);
+        while (*str && buf_ptr < buffer + MAX_SIZE - 1) {
+          *buf_ptr++ = *str++;
+          written++;
+        }
+      } else if (*fmt == 'c') {  // Character
+        char c = (char)va_arg(args, int);
+        *buf_ptr++ = c;
+        written++;
+      }
+      // TODO: Add support for other formats like %f, %x as needed
+    } else {
+      // Copy non-placeholder characters directly
+      *buf_ptr++ = *fmt;
+      written++;
+    }
+    fmt++;
+  }
+
+  va_end(args);
+
+  // Write the buffer content to the file
+  ecrire(buffer, sizeof(char), buf_ptr - buffer, f);
+  return written;  // Return the number of characters written
 }
 
 /* directly in stdout */
