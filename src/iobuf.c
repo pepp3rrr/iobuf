@@ -9,6 +9,33 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
+void init_es_standard()
+{
+  stdout = malloc(sizeof(FICHIER));
+  if (stdout == NULL) {
+    exit(10);
+  }
+  stdout->fd = 1;
+  stdout->rbuf = NULL;
+  stdout->wbuf = malloc(MAX_SIZE);
+  if (stdout->wbuf == NULL) {
+    exit(11);
+  }
+  stdout->wbuf_p = 0;
+
+  stderr = malloc(sizeof(FICHIER));
+  if (stderr == NULL) {
+    exit(12);
+  }
+  stderr->fd = 2;
+  stderr->rbuf = NULL;
+  stderr->wbuf = malloc(MAX_SIZE);
+  if (stderr->wbuf == NULL) {
+    exit(13);
+  }
+  stderr->wbuf_p = 0;
+}
+
 FICHIER* ouvrir(const char* nom, char mode)
 {
   int file_fd;

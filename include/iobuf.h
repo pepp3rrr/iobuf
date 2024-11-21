@@ -23,6 +23,8 @@ typedef struct _ES_FICHIER {
 extern FICHIER* stdout;
 extern FICHIER* stderr;
 
+void init_es_standard();
+
 /// @brief Opens a file from a given path, uses `open` internally
 /// @param nom The path (relative and absolute supported) of the file to open
 /// @param mode The file opening mode, 'L' for read-only, 'R' for write-only,
