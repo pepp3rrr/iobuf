@@ -97,6 +97,7 @@ FICHIER* ouvrir(const char* nom, char mode)
 
 int fermer(FICHIER* f)
 {
+  vider(f);
   close(f->fd);
   free(f->wbuf);
   free(f->rbuf);
