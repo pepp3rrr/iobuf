@@ -11,7 +11,7 @@ typedef struct _ES_FICHIER {
   /// The file open mode, L | E
   char mode;
   /// The buffer for caching disk reads & writes
-  char (*buf)[MAX_SIZE];
+  char buf[MAX_SIZE];
   /// The current index in the buffer
   size_t buf_i;
 } FICHIER;
