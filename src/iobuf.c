@@ -1,6 +1,7 @@
 #include "iobuf.h"
 
 #include <fcntl.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -162,22 +163,133 @@ int vider(FICHIER* f)
   return bytes_written;
 }
 
+int vfecriref(FICHIER* f, const char* format, va_list args)
+{
+  char buffer[MAX_SIZE];
+  char* buf_ptr = buffer;
+  const char* fmt = format;
+  int written = 0;
+
+  while (*fmt && buf_ptr < buffer + MAX_SIZE - 1) {
+    if (*fmt == '%') {
+      fmt++;
+      if (*fmt == 'd') {  // Integer
+        int value = va_arg(args, int);
+        char int_buf[20];  // Temporary buffer for integer, don't mind buffer
+                           // overflows that's C anyway
+        int len = 0;
+        if (value < 0) {
+          *buf_ptr++ = '-';
+          value = -value;
+          written++;
+        }
+        do {
+          int_buf[len++] = '0' + (value % 10);
+          value /= 10;
+        } while (value > 0);
+
+        for (int i = len - 1; i >= 0; i--) {
+          *buf_ptr++ = int_buf[i];
+          written++;
+        }
+      } else if (*fmt == 's') {  // String
+        const char* str = va_arg(args, const char*);
+        while (*str && buf_ptr < buffer + MAX_SIZE - 1) {
+          *buf_ptr++ = *str++;
+          written++;
+        }
+      } else if (*fmt == 'c') {  // Character
+        char c = (char)va_arg(args, int);
+        *buf_ptr++ = c;
+        written++;
+      }
+      // TODO: Add support for other formats like %f, %x as needed
+    } else {
+      // Copy non-placeholder characters directly
+      *buf_ptr++ = *fmt;
+      written++;
+    }
+    fmt++;
+  }
+
+  va_end(args);
+
+  // Write the buffer content to the file
+  ecrire(buffer, sizeof(char), buf_ptr - buffer, f);
+  return written;  // Return the number of characters written
+}
+
 int fecriref(FICHIER* f, const char* format, ...)
 {
-  // Simple implementation for now
-  ecrire(format, sizeof(char), strlen(format), f);
-  return 0;
+  va_list args;
+  va_start(args, format);
+
+  int written = vfecriref(f, format, args);
+
+  va_end(args);
+  return written;
 }
 
 /* directly in stdout */
 int ecriref(const char* format, ...)
 {
-  fecriref(stdout, format);
-  return 0;
+  va_list args;
+  va_start(args, format);
+
+  // Use the existing vfecriref implementation
+  int written = vfecriref(stdout, format, args);
+
+  va_end(args);
+  return written;
 }
 
 int fliref(FICHIER* f, const char* format, ...)
 {
-  // TODO: implement
-  return 0;
+  char input[MAX_SIZE];
+  int read_bytes = lire(input, sizeof(char), MAX_SIZE - 1, f);
+  if (read_bytes <= 0) {
+    return -1;  // Error or EOF
+  }
+  input[read_bytes] = '\0';  // Null-terminate the input string
+
+  va_list args;
+  va_start(args, format);
+
+  const char* fmt = format;
+  const char* inp = input;
+  int matches = 0;
+
+  while (*fmt && *inp) {
+    if (*fmt == '%') {
+      fmt++;
+      if (*fmt == 'd') {  // Integer
+        int* target = va_arg(args, int*);
+        char* endptr;
+        *target = strtol(inp, &endptr, 10);
+        if (endptr == inp)
+          break;  // No valid integer found
+        inp = endptr;
+        matches++;
+      } else if (*fmt == 's') {  // String
+        char* target = va_arg(args, char*);
+        while (*inp && *inp != ' ' && *inp != '\n') {
+          *target++ = *inp++;
+        }
+        *target = '\0';
+        matches++;
+      }
+      // TODO: Add other cases (e.g., %f for floats) as needed
+    } else {
+      // Skip over matching characters
+      if (*fmt == *inp) {
+        inp++;
+      } else {
+        break;  // Format and input mismatch
+      }
+    }
+    fmt++;
+  }
+
+  va_end(args);
+  return matches;  // Return number of successfully matched fields
 }
