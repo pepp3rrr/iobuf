@@ -105,7 +105,10 @@ clean:
 
 # Test target
 test: $(TEST_OBJECTS) $(OBJECTS)
-	$(foreach test,$(TEST_SOURCES),$(CC) $(CFLAGS) $(INCLUDES) -o $(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=))) $(test:.c=.o) $(OBJECTS) $(LFLAGS) $(LIBS); ./$(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=)));)
+	@$(foreach test,$(TEST_SOURCES), \
+		$(CC) $(CFLAGS) $(INCLUDES) -o $(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=))) $(test:.c=.o) $(OBJECTS) $(LFLAGS) $(LIBS) && \
+		./$(call FIXPATH,$(OUTPUT)/$(notdir $(test:.c=))) || exit 1; \
+	)
 	@echo Executing 'test' complete!
 
 # include all test .d files
