@@ -8,16 +8,14 @@ struct _ES_FICHIER;
 typedef struct _ES_FICHIER {
   /// The UNIX file descriptor
   int fd;
-  /// The read buffer for caching disk reads
-  char (*rbuf)[MAX_SIZE];
-  /// The write buffer for caching disk write operations
-  char (*wbuf)[MAX_SIZE];
-  /// The current index of the last written object in the `wbuf`
-  size_t wbuf_p;
-  /// The current index of the last read object in the `rbuf`
-  size_t rbuf_p;
-  /// The size of the `rbuf` (for reads not filling the buffer)
-  size_t rbuf_s;
+  /// The file open mode, L | E
+  char mode;
+  /// The buffer for caching disk reads & writes
+  char buf[MAX_SIZE];
+  /// The current index in the buffer
+  size_t buf_i;
+  /// The current size of the buffer
+  size_t buf_s;
 } FICHIER;
 
 extern FICHIER* stdout;
@@ -27,8 +25,7 @@ void init_es_standard();
 
 /// @brief Opens a file from a given path, uses `open` internally
 /// @param nom The path (relative and absolute supported) of the file to open
-/// @param mode The file opening mode, 'L' for read-only, 'R' for write-only,
-/// 'A' for both
+/// @param mode The file opening mode, 'L' for read-only, 'R' for write-only
 /// @return A file descriptor containing metadata and read/write cache buffers
 FICHIER* ouvrir(const char* nom, char mode);
 
