@@ -163,11 +163,8 @@ int vider(FICHIER* f)
   return bytes_written;
 }
 
-int fecriref(FICHIER* f, const char* format, ...)
+int vfecriref(FICHIER* f, const char* format, va_list args)
 {
-  va_list args;
-  va_start(args, format);
-
   char buffer[MAX_SIZE];
   char* buf_ptr = buffer;
   const char* fmt = format;
@@ -222,11 +219,28 @@ int fecriref(FICHIER* f, const char* format, ...)
   return written;  // Return the number of characters written
 }
 
+int fecriref(FICHIER* f, const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+
+  int written = vfecriref(f, format, args);
+
+  va_end(args);
+  return written;
+}
+
 /* directly in stdout */
 int ecriref(const char* format, ...)
 {
-  fecriref(stdout, format);
-  return 0;
+  va_list args;
+  va_start(args, format);
+
+  // Use the existing vfecriref implementation
+  int written = vfecriref(stdout, format, args);
+
+  va_end(args);
+  return written;
 }
 
 int fliref(FICHIER* f, const char* format, ...)
