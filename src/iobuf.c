@@ -231,6 +231,51 @@ int ecriref(const char* format, ...)
 
 int fliref(FICHIER* f, const char* format, ...)
 {
-  // TODO: implement
-  return 0;
+  char input[MAX_SIZE];
+  int read_bytes = lire(input, sizeof(char), MAX_SIZE - 1, f);
+  if (read_bytes <= 0) {
+    return -1;  // Error or EOF
+  }
+  input[read_bytes] = '\0';  // Null-terminate the input string
+
+  va_list args;
+  va_start(args, format);
+
+  const char* fmt = format;
+  const char* inp = input;
+  int matches = 0;
+
+  while (*fmt && *inp) {
+    if (*fmt == '%') {
+      fmt++;
+      if (*fmt == 'd') {  // Integer
+        int* target = va_arg(args, int*);
+        char* endptr;
+        *target = strtol(inp, &endptr, 10);
+        if (endptr == inp)
+          break;  // No valid integer found
+        inp = endptr;
+        matches++;
+      } else if (*fmt == 's') {  // String
+        char* target = va_arg(args, char*);
+        while (*inp && *inp != ' ' && *inp != '\n') {
+          *target++ = *inp++;
+        }
+        *target = '\0';
+        matches++;
+      }
+      // TODO: Add other cases (e.g., %f for floats) as needed
+    } else {
+      // Skip over matching characters
+      if (*fmt == *inp) {
+        inp++;
+      } else {
+        break;  // Format and input mismatch
+      }
+    }
+    fmt++;
+  }
+
+  va_end(args);
+  return matches;  // Return number of successfully matched fields
 }
