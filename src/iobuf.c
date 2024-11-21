@@ -193,7 +193,7 @@ int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
       vider(f);
       continue;
     } else {
-      mempcpy(f->wbuf + f->wbuf_p, p, available_elems * taille);
+      memcpy(f->wbuf + f->wbuf_p, p, available_elems * taille);
       p += available_elems * taille;
       written_elems += available_elems;
       f->wbuf_p += available_elems * taille;
