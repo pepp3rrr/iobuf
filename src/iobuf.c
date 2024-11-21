@@ -44,24 +44,24 @@ FICHIER* ouvrir(const char* nom, char mode)
       file_fd = open(nom, O_RDONLY);
       break;
     case 'E':
-      file_fd = open(nom, O_WRONLY);
+      file_fd = open(nom, O_WRONLY | O_CREAT, 0700);
       break;
     case 'A':
-      file_fd = open(nom, O_RDWR);
+      file_fd = open(nom, O_RDWR | O_CREAT, 0700);
       break;
     default:
-      // fecriref(stderr, "Unsupported mode");
+      fecriref(stderr, "Unsupported mode");
       return NULL;
   }
 
   if (file_fd == -1) {
-    // fecriref(stderr, "Error opening file");
+    fecriref(stderr, "Error opening file");
     return NULL;
   }
 
   FICHIER* file = malloc(sizeof(FICHIER));
   if (file == NULL) {
-    // fecriref(stderr, "Internal alloc error");
+    fecriref(stderr, "Internal alloc error");
     return NULL;
   }
 
@@ -70,7 +70,7 @@ FICHIER* ouvrir(const char* nom, char mode)
   if (mode == 'L' || mode == 'A') {
     rbuf = malloc(MAX_SIZE);
     if (rbuf == NULL) {
-      // fecriref(stderr, "Internal alloc error");
+      fecriref(stderr, "Internal alloc error");
       free(file);
       return NULL;
     }
@@ -78,7 +78,7 @@ FICHIER* ouvrir(const char* nom, char mode)
   if (mode == 'E' || mode == 'A') {
     wbuf = malloc(MAX_SIZE);
     if (wbuf == NULL) {
-      // fecriref(stderr, "Internal alloc error");
+      fecriref(stderr, "Internal alloc error");
       free(file);
       free(rbuf);
       return NULL;
