@@ -7,14 +7,11 @@ int main(int argc, char *argv[])
 	FICHIER *f2;
 	char c;
 
-	if (argc != 3)
-		exit(-1);
-
-	f1 = ouvrir (argv[1], 'L');
+	f1 = ouvrir ("test_files/test_file1.txt", 'L');
 	if (f1 == NULL)
 		exit (-1);
 
-	f2 = ouvrir (argv[2], 'E');
+	f2 = ouvrir ("test_files/test_file2.txt", 'E');
 	if (f2 == NULL)
 		exit (-1);
 
