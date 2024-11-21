@@ -6,7 +6,7 @@
 int main()
 {
   FICHIER* f;
-  char* filename = "rand-file.txt";
+  char* filename = "simple-format.txt";
 
   init_es_standard();
 
