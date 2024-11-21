@@ -111,6 +111,16 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
     return 0;
   }
 
+  if (taille >= MAX_SIZE) {
+    // Don't bother using the cache, reaed directly into the buffer
+    ssize_t bytes_read = read(f->fd, p, taille * nbelem);
+    if (bytes_read == -1) {
+      fecriref(stderr, "Error reading from file");
+      return 0;
+    }
+    return bytes_read / taille;
+  }
+
   char refill_rbuf = f->rbuf_p == 0 && nbelem && taille;
   unsigned int read_elems = 0;
   while (read_elems != nbelem) {
@@ -153,11 +163,22 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 
   return read_elems;
 }
+
 int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
 {
   if (f->wbuf == NULL) {
     fecriref(stderr, "Called `ecrire` on a file opened in read-only mode");
     return 0;
+  }
+
+  if (taille >= MAX_SIZE) {
+    // Don't bother using the cache, write directly from the buffer
+    ssize_t bytes_written = write(f->fd, p, taille * nbelem);
+    if (bytes_written == -1) {
+      fecriref(stderr, "Error writing to file");
+      return 0;
+    }
+    return bytes_written / taille;
   }
 
   unsigned int written_elems = 0;
