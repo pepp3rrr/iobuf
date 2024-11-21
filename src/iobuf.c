@@ -222,16 +222,17 @@ int vider(FICHIER* f)
 int fecriref(FICHIER* f, const char* format, ...)
 {
   // Simple implementation for now
-  write(f->fd, format, strlen(format));
+  ecrire(format, sizeof(char), strlen(format), f);
   return 0;
 }
+
 /* directly in stdout */
 int ecriref(const char* format, ...)
 {
-  // Simple implementation for now
-  write(stdout->fd, format, strlen(format));
+  fecriref(stdout, format);
   return 0;
 }
+
 int fliref(FICHIER* f, const char* format, ...)
 {
   // TODO: implement
