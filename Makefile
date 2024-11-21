@@ -72,13 +72,16 @@ TEST_OBJECTS	:= $(TEST_SOURCES:.c=.o)
 # define the test dependency output files
 TEST_DEPS		:= $(TEST_OBJECTS:.o=.d)
 
+# define the test binaries
+TEST_BINARIES	:= $(patsubst %,$(OUTPUT)/%,$(TEST_SOURCES:.c=))
+
 #
 # The following part of the makefile is generic; it can be used to
 # build any executable just by changing the definitions above and by
 # deleting dependencies appended to the file from 'make depend'
 #
 
-all: $(OUTPUT)
+all: $(OUTPUT) $(TEST_BINARIES)
 	@echo Executing 'all' complete!
 
 $(OUTPUT):
@@ -101,6 +104,7 @@ clean:
 	$(RM) $(call FIXPATH,$(DEPS))
 	$(RM) $(call FIXPATH,$(TEST_OBJECTS))
 	$(RM) $(call FIXPATH,$(TEST_DEPS))
+	$(RM) $(call FIXPATH,$(TEST_BINARIES))
 	@echo Cleanup complete!
 
 # Test target
@@ -113,4 +117,8 @@ test: $(TEST_OBJECTS) $(OBJECTS)
 
 # include all test .d files
 -include $(TEST_DEPS)
+
+# Rule to build test binaries
+$(OUTPUT)/%: %.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(OBJECTS) $(LFLAGS) $(LIBS)
 
