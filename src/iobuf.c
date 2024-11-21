@@ -82,10 +82,13 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
         // Move last bytes to the beginning of the buffer
         memmove(f->buf, (void*)f->buf + f->buf_i, available_bytes);
       }
-      f->buf_s = read(  // FIX: Proper error handling
-          f->fd,
-          (void*)f->buf + available_bytes,
-          MAX_SIZE - available_bytes);
+      ssize_t bytes_read = read(
+          f->fd, (void*)f->buf + available_bytes, MAX_SIZE - available_bytes);
+      if (bytes_read == -1) {
+        fecriref(stderr, "Error reading from file\n");
+        return read_elems;
+      }
+      f->buf_s = bytes_read + available_bytes;
       f->buf_i = 0;
     }
 
