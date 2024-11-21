@@ -93,9 +93,13 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
     }
 
     if (f->buf_s < taille) {
-      // Can't read more elements because reached EOF
-      // TODO: Handle when taille > MAX_SIZE
-      break;
+      // Read directly into the user buffer
+      ssize_t bytes_read = read(f->fd, p, taille);
+      if (bytes_read == -1) {
+        fecriref(stderr, "Error reading from file\n");
+        return read_elems;
+      }
+      return bytes_read / taille;  // Return number of full elements read
     }
 
     memcpy(p, (void*)f->buf + f->buf_i, taille);
@@ -122,6 +126,15 @@ int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
     if (available_bytes < taille) {
       // Buffer is full, write it to the file
       vider(f);
+    }
+
+    if (taille > MAX_SIZE) {
+      ssize_t bytes_written = write(f->fd, p, taille);
+      if (bytes_written == -1) {
+        fecriref(stderr, "Error writing to file\n");
+        return written_elems;
+      }
+      return bytes_written / taille;
     }
 
     memcpy((void*)f->buf + f->buf_s, p, taille);
