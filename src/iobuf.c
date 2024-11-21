@@ -163,26 +163,29 @@ int vider(FICHIER* f)
   return bytes_written;
 }
 
-int vfecriref(FICHIER* f, const char* format, va_list args)
+// Process the format string and arguments, handle both read and write
+// operations
+int process_format(FICHIER* f, const char* format, va_list args, int is_write)
 {
   char buffer[MAX_SIZE];
   char* buf_ptr = buffer;
   const char* fmt = format;
-  int written = 0;
+  int processed = 0;
 
   while (*fmt && buf_ptr < buffer + MAX_SIZE - 1) {
     if (*fmt == '%') {
-      fmt++;
+      fmt++;  // Skip '%'
       if (*fmt == 'd') {  // Integer
         int value = va_arg(args, int);
-        char int_buf[20];  // Temporary buffer for integer, don't mind buffer
-                           // overflows that's C anyway
+        char int_buf[20];  // Temporary buffer for integer
         int len = 0;
+
         if (value < 0) {
           *buf_ptr++ = '-';
           value = -value;
-          written++;
+          processed++;
         }
+
         do {
           int_buf[len++] = '0' + (value % 10);
           value /= 10;
@@ -190,33 +193,39 @@ int vfecriref(FICHIER* f, const char* format, va_list args)
 
         for (int i = len - 1; i >= 0; i--) {
           *buf_ptr++ = int_buf[i];
-          written++;
+          processed++;
         }
+
       } else if (*fmt == 's') {  // String
         const char* str = va_arg(args, const char*);
         while (*str && buf_ptr < buffer + MAX_SIZE - 1) {
           *buf_ptr++ = *str++;
-          written++;
+          processed++;
         }
+
       } else if (*fmt == 'c') {  // Character
         char c = (char)va_arg(args, int);
         *buf_ptr++ = c;
-        written++;
+        processed++;
       }
-      // TODO: Add support for other formats like %f, %x as needed
+      // TODO: Add other formats like %f, %x, etc.
     } else {
       // Copy non-placeholder characters directly
       *buf_ptr++ = *fmt;
-      written++;
+      processed++;
     }
     fmt++;
   }
 
-  va_end(args);
+  // If writing, call ecrire() to write the content to file
+  if (is_write) {
+    ecrire(buffer, sizeof(char), buf_ptr - buffer, f);
+  } else {
+    // Otherwise, return the buffer content, like in fliref
+    return buf_ptr - buffer;  // Return number of characters processed
+  }
 
-  // Write the buffer content to the file
-  ecrire(buffer, sizeof(char), buf_ptr - buffer, f);
-  return written;  // Return the number of characters written
+  return processed;
 }
 
 int fecriref(FICHIER* f, const char* format, ...)
@@ -224,7 +233,7 @@ int fecriref(FICHIER* f, const char* format, ...)
   va_list args;
   va_start(args, format);
 
-  int written = vfecriref(f, format, args);
+  int written = process_format(f, format, args, 1);
 
   va_end(args);
   return written;
@@ -236,8 +245,7 @@ int ecriref(const char* format, ...)
   va_list args;
   va_start(args, format);
 
-  // Use the existing vfecriref implementation
-  int written = vfecriref(stdout, format, args);
+  int written = process_format(stdout, format, args, 1);
 
   va_end(args);
   return written;
@@ -255,41 +263,8 @@ int fliref(FICHIER* f, const char* format, ...)
   va_list args;
   va_start(args, format);
 
-  const char* fmt = format;
-  const char* inp = input;
-  int matches = 0;
-
-  while (*fmt && *inp) {
-    if (*fmt == '%') {
-      fmt++;
-      if (*fmt == 'd') {  // Integer
-        int* target = va_arg(args, int*);
-        char* endptr;
-        *target = strtol(inp, &endptr, 10);
-        if (endptr == inp)
-          break;  // No valid integer found
-        inp = endptr;
-        matches++;
-      } else if (*fmt == 's') {  // String
-        char* target = va_arg(args, char*);
-        while (*inp && *inp != ' ' && *inp != '\n') {
-          *target++ = *inp++;
-        }
-        *target = '\0';
-        matches++;
-      }
-      // TODO: Add other cases (e.g., %f for floats) as needed
-    } else {
-      // Skip over matching characters
-      if (*fmt == *inp) {
-        inp++;
-      } else {
-        break;  // Format and input mismatch
-      }
-    }
-    fmt++;
-  }
+  int matches = process_format(f, format, args, 0);  // is_write = 0 for reading
 
   va_end(args);
-  return matches;  // Return number of successfully matched fields
+  return matches;
 }
