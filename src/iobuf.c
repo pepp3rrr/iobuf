@@ -78,20 +78,32 @@ int lire(void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
   while (read_elems < nbelem) {
     unsigned int available_bytes = f->buf_s - f->buf_i;
     if (available_bytes < taille) {
-      if (available_bytes != 0) {
-        // Move last bytes to the beginning of the buffer
-        memmove(f->buf, (void*)f->buf + f->buf_i, available_bytes);
+      // Move last bytes to the beginning of the buffer
+      memmove(f->buf, (void*)f->buf + f->buf_i, available_bytes);
+      ssize_t bytes_read = read(
+          f->fd, (void*)f->buf + available_bytes, MAX_SIZE - available_bytes);
+      if (bytes_read == -1) {
+        fecriref(stderr, "Error reading from file\n");
+        return 0;
       }
-      f->buf_s = read(  // FIX: Proper error handling
-          f->fd,
-          (void*)f->buf + available_bytes,
-          MAX_SIZE - available_bytes);
+      f->buf_s = available_bytes + bytes_read;
       f->buf_i = 0;
     }
 
     if (f->buf_s < taille) {
       // Can't read more elements because reached EOF
-      // TODO: Handle when taille > MAX_SIZE
+      // Copy what is left in the buffer
+      memcpy(p, (void*)f->buf + f->buf_i, f->buf_s);
+      f->buf_i += f->buf_s;
+      p += f->buf_s;
+      // Then read the rest directly from the file
+      ssize_t bytes_read = read(f->fd, p, taille - f->buf_s);
+      if (bytes_read == -1) {
+        fecriref(stderr, "Error reading from file\n");
+        return 0;
+      }
+      read_elems += 1;
+      p += bytes_read;
       break;
     }
 
@@ -119,6 +131,19 @@ int ecrire(const void* p, unsigned int taille, unsigned int nbelem, FICHIER* f)
     if (available_bytes < taille) {
       // Buffer is full, write it to the file
       vider(f);
+    }
+
+    if (MAX_SIZE < taille) {
+      // Can't write more elements because buffer is too small
+      // Write without using buffer (we already flushed)
+      ssize_t bytes_written = write(f->fd, p, taille);
+      if (bytes_written != taille) {
+        fecriref(stderr, "Error writing to file\n");
+        return written_elems;
+      }
+      written_elems += 1;
+      p += taille;
+      break;
     }
 
     memcpy((void*)f->buf + f->buf_s, p, taille);
